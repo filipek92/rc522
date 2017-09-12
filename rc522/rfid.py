@@ -1,6 +1,4 @@
 import threading
-import spidev
-import RPi.GPIO as GPIO
 
 class RFID(object):
     pin_rst = 22
@@ -39,26 +37,23 @@ class RFID(object):
     authed = False
     irq = threading.Event()
 
-    def __init__(self, bus=0, device=0, speed=1000000, pin_rst=22,
-            pin_ce=0, pin_irq=18, pin_mode=GPIO.BOARD):
+    def __init__(self, spidev, pin_rst=None, pin_ce=None, pin_irq=None):
         self.pin_rst = pin_rst
         self.pin_ce = pin_ce
         self.pin_irq = pin_irq
 
-        self.spi = spidev.SpiDev()
-        self.spi.open(bus, device)
-        self.spi.max_speed_hz = speed
+        self.spi = spidev
 
-        GPIO.setmode(pin_mode)
-        if pin_rst != 0:
-            GPIO.setup(pin_rst, GPIO.OUT)
-            GPIO.output(pin_rst, 1)
-        GPIO.setup(pin_irq, GPIO.IN, pull_up_down=GPIO.PUD_UP)
-        GPIO.add_event_detect(pin_irq, GPIO.FALLING,
-                callback=self.irq_callback)
-        if pin_ce != 0:
-            GPIO.setup(pin_ce, GPIO.OUT)
-            GPIO.output(pin_ce, 1)
+        if pin_rst:
+            pin_rst.setup(mode="OUT")
+            pin_rst(1)
+
+        if pin_irq:
+            pin_irq.setup(mode="IN", pull="UP")
+            pin_irq.event(type="FALLING", callback=self.irq_callback)
+        if pin_ce:
+            pin_ce.setup(mode="OUT")
+            pin_ce(1)
         self.init()
 
     def init(self):
@@ -73,11 +68,11 @@ class RFID(object):
         self.set_antenna(True)
 
     def spi_transfer(self, data):
-        if self.pin_ce != 0:
-            GPIO.output(self.pin_ce, 0)
+        if self.pin_ce:
+            self.pin_ce(0);
         r = self.spi.xfer2(data)
-        if self.pin_ce != 0:
-            GPIO.output(self.pin_ce, 1)
+        if self.pin_ce:
+            self.pin_ce(1)
         return r
 
     def dev_write(self, address, value):

@@ -6,7 +6,7 @@ from setuptools import setup, find_packages
 from setuptools.command.test import test as TestCommand
 
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__),
-    'pirc522')))
+    'rc522')))
 
 from pirc522 import __version__  # flake8: noqa
 sys.path.pop(0)
